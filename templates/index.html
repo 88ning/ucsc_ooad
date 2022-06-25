@@ -6,7 +6,7 @@
 
    
     {% for product in products %}
-        <a href="{{ url_for('product', product_id=product['id']) }}">
+        <a href="{{ url_for('product', id=product['id']) }}">
             <h2>{{ product['product_name'] }}</h2>
         </a>
         <p>{{ product['description'] }}</p>

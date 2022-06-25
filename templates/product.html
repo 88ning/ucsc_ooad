@@ -1,10 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h2>{% block title %} {{ product['product_name'] }} {% endblock %}</h2>
+    <h2>{% block title %} {{ product['name'] }} {% endblock %}</h2>
     <span class="badge badge-primary">{{ product['price'] }}</span>
     <p>{{ product['description'] }}</p>
+
+    {% if user == 'Anonymous' %}
+    <p><a href="{{ url_for('signin') }}">Sign in</a> to edit this product or add a review.</p>
+    
+    {% else %}
     <a href="{{ url_for('edit', id=product['id']) }}">
         <span class="badge badge-warning">Edit</span>
     </a>
+    {% endif %}
 {% endblock %}

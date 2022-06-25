@@ -10,14 +10,14 @@ def get_db_connection():
     return conn
 
 
-def get_product(product_id):
-    conn = get_db_connection()
-    product = conn.execute('SELECT * FROM products WHERE id = ?',
-                        (product_id,)).fetchone()
-    conn.close()
-    if product is None:
-        abort(404)
-    return product
+# def get_product(product_id):
+#     conn = get_db_connection()
+#     product = conn.execute('SELECT * FROM products WHERE id = ?',
+#                         (product_id,)).fetchone()
+#     conn.close()
+#     if product is None:
+#         abort(404)
+#     return product
     
 ##############################################
 ## CLASS DEFINITIONS
@@ -57,10 +57,24 @@ class Review(object):
 
 class Product(object):
     def __init__(self, product_id=None, name=None, description=None, price=None):
-        self.id = product_id
-        self.name = name
-        self.description = description
-        self.price = price
+        
+        if product_id != '':
+            conn = get_db_connection()
+            product = conn.execute('SELECT * FROM products WHERE id = ?',
+                                (product_id,)).fetchone()
+            conn.close()
+            # if product is None:
+            #     abort(404)
+            self.id = product_id
+            self.name = product['product_name']
+            self.description = product['description']
+            self.price = product['price']
+        else:
+            self.id = product_id
+            self.name = name
+            self.description = description
+            self.price = price
+
         
 
     def update_db(self):
@@ -126,10 +140,10 @@ def index():
 ######################################
 ########## Product Routing  ##########
 ######################################
-@app.route('/<int:product_id>')
-def product(product_id):
-    product = get_product(product_id)
-    return render_template('product.html', product=product)
+@app.route('/<int:id>')
+def product(id):
+    product = Product(product_id=id)
+    return render_template('product.html', product=product, user=current_user.username)
 
 @app.route('/create', methods=('GET', 'POST'))
 def create():
@@ -149,7 +163,7 @@ def create():
 
 @app.route('/<int:id>/edit', methods=('GET', 'POST'))
 def edit(id):
-    product = get_product(id)
+    product = Product(product_id=id)
 
     if request.method == 'POST':
         product_name = request.form['product_name']
@@ -162,6 +176,11 @@ def edit(id):
             existing_product = Product(product_id=id,name=product_name, description=description, price=price)
             existing_product.update_db()
             return redirect(url_for('index'))
+
+    # Make sure that only authenticated users can edit products
+    elif current_user.username == 'Anonymous':
+        flash("Sign in to edit a product.")
+        return render_template('product.html', product=product)
     return render_template('edit.html', product=product)
 
 @app.route('/<int:id>/delete', methods=('POST',))
