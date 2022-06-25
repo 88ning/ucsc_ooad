@@ -34,7 +34,11 @@ class User(object):
         self.password = None
 
     def get_reviews(self):
-        pass
+        conn = get_db_connection()
+        reviews = conn.execute('SELECT * FROM reviews WHERE user_id = ? ORDER BY date', (self.id,)).fetchall()
+        conn.close()
+        return reviews
+
 
 class Review(object):
     def __init__(self, review_id=None, product_id=None, user=None, rating=None, feedback=None):
@@ -105,6 +109,29 @@ class Product(object):
         pass
 
 
+class Order(object):
+    def __init__(self, transaction_id=None, user_id=None):
+        self.id = transaction_id
+        self.user = user_id
+        self.products = []
+    
+    def add_product(self, product_id):
+        self.products.append(product_id)
+
+    def remove_product(self, product_id):
+        self.products.remove(product_id)  
+ 
+    def commit_order(self):
+        conn = get_db_connection()
+        for product in self.products:
+            conn.execute('INSERT INTO orders (transaction_id, user, product) VALUES (?, ?, ?)',
+                            (self.id, self.user, product))
+            
+        conn.commit()
+        conn.close()
+
+    
+
 ##############################################
 ## Initializations an functions
 ##############################################
@@ -136,82 +163,6 @@ def index():
         flash('{} {} {}'.format(current_user.id, current_user.username, current_user.password))
     
     return render_template('index.html', products=products, user=current_user.username)
-
-######################################
-########## Product Routing  ##########
-######################################
-@app.route('/<int:id>')
-def product(id):
-    product = Product(product_id=id)
-    return render_template('product.html', product=product, user=current_user.username)
-
-@app.route('/create', methods=('GET', 'POST'))
-def create():
-    if request.method == 'POST':
-        product_name = request.form['product_name']
-        description = request.form['description']
-        price = request.form['price']
-        
-        
-        if not product_name:
-            flash('Title is required!')
-        else:
-            new_product = Product(name=product_name, description=description,price=price)
-            new_product.update_db()
-            return redirect(url_for('index'))
-    return render_template('create.html')
-
-@app.route('/<int:id>/edit', methods=('GET', 'POST'))
-def edit(id):
-    product = Product(product_id=id)
-
-    if request.method == 'POST':
-        product_name = request.form['product_name']
-        description = request.form['description']
-        price = request.form['price']
-    
-        if not product_name:
-            flash('Title is required!')
-        else:
-            existing_product = Product(product_id=id,name=product_name, description=description, price=price)
-            existing_product.update_db()
-            return redirect(url_for('index'))
-
-    # Make sure that only authenticated users can edit products
-    elif current_user.username == 'Anonymous':
-        flash("Sign in to edit a product.")
-        return render_template('product.html', product=product)
-    return render_template('edit.html', product=product)
-
-@app.route('/<int:id>/delete', methods=('POST',))
-def delete(id):
-    product = Product(product_id=id)
-    product.delete()
-    flash('Product successfully deleted!')
-    return redirect(url_for('index'))
-
-##############################
-########## Reviews  ##########
-##############################
-@app.route('/<int:id>/review', methods=('GET', 'POST'))
-def review(id):
-    product = Product(product_id=id)
-    reviews = product.get_reviews()
-    if request.method == 'POST':
-        feedback = request.form['feedback']
-        rating = request.form['rating']
-
-        review = Review(product_id=id, user=current_user.username, feedback=feedback, rating=rating)
-        review.add()
-        flash("Review added!")
-        return render_template('review.html', product=product, reviews=reviews, user=current_user.username)
-
-    if request.method == 'GET':
-        product = Product(product_id=id)
-        reviews = product.get_reviews()
-        
-
-    return render_template('review.html', product=product, reviews=reviews, user=current_user.username)
 
 
 ##############################
@@ -253,3 +204,101 @@ def signin():
             
     return render_template('sign-in.html', product=product)
 
+######################################
+########## Product Routing  ##########
+######################################
+@app.route('/<int:id>')
+def product(id):
+    product = Product(product_id=id)
+    return render_template('product.html', product=product, user=current_user.username)
+
+######################################
+########## Create  Product ###########
+######################################
+@app.route('/create', methods=('GET', 'POST'))
+def create():
+    if request.method == 'POST':
+        product_name = request.form['product_name']
+        description = request.form['description']
+        price = request.form['price']
+        
+        
+        if not product_name:
+            flash('Title is required!')
+        else:
+            new_product = Product(name=product_name, description=description,price=price)
+            new_product.update_db()
+            return redirect(url_for('index'))
+    if current_user.username == 'Anonymous':
+        flash("Sign in to sell a product on Wallymart.")
+        return redirect(url_for('signin'))
+    return render_template('create.html')
+
+######################################
+########## Edit Product #############
+######################################
+@app.route('/<int:id>/edit', methods=('GET', 'POST'))
+def edit(id):
+    product = Product(product_id=id)
+
+    if request.method == 'POST':
+        product_name = request.form['product_name']
+        description = request.form['description']
+        price = request.form['price']
+    
+        if not product_name:
+            flash('Title is required!')
+        else:
+            existing_product = Product(product_id=id,name=product_name, description=description, price=price)
+            existing_product.update_db()
+            return redirect(url_for('index'))
+
+    # Make sure that only authenticated users can edit products
+    elif current_user.username == 'Anonymous':
+        flash("Sign in to edit a product.")
+        return render_template('product.html', product=product)
+    return render_template('edit.html', product=product)
+
+######################################
+########## Delete Product ############
+######################################
+@app.route('/<int:id>/delete', methods=('POST',))
+def delete(id):
+    product = Product(product_id=id)
+    product.delete()
+    flash('Product successfully deleted!')
+    return redirect(url_for('index'))
+
+######################################
+########## Review Product ############
+######################################
+@app.route('/<int:id>/review', methods=('GET', 'POST'))
+def review(id):
+    product = Product(product_id=id)
+    reviews = product.get_reviews()
+    if request.method == 'POST':
+        feedback = request.form['feedback']
+        rating = request.form['rating']
+
+        review = Review(product_id=id, user=current_user.username, feedback=feedback, rating=rating)
+        review.add()
+        flash("Review added!")
+        return render_template('review.html', product=product, reviews=reviews, user=current_user.username)
+
+    if request.method == 'GET':
+        product = Product(product_id=id)
+        reviews = product.get_reviews()
+        
+
+    return render_template('review.html', product=product, reviews=reviews, user=current_user.username)
+
+######################################
+########## Shopping Cart ############
+######################################
+@app.route('/cart', methods=('GET', 'POST'))
+def shopping_cart():
+    # Make sure that only authenticated users can edit products
+    if current_user.username == 'Anonymous':
+        flash("Sign in to see your shopping cart.")
+        return redirect(url_for('signin'))
+    return render_template('shopping-cart.html', user=current_user.username)
