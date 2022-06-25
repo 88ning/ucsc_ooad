@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Wallymart Products {% endblock %}</h1>
+   
+
+   
+    {% for product in products %}
+        <a href="{{ url_for('product', product_id=product['id']) }}">
+            <h2>{{ product['product_name'] }}</h2>
+        </a>
+        <p>{{ product['description'] }}</p>
+        <span class="badge badge-primary">{{ product['price'] }}</span>
+        <a href="{{ url_for('review', id=product['id']) }}">
+            <span class="badge badge-warning">Reviews</span>
+        </a>
+        <hr>
+    {% endfor %}
+{% endblock %}

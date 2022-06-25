@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{% block title %} Edit "{{ product['product_name'] }}" {% endblock %}</h1>
+
+<form method="post">
+    <div class="form-group">
+        <label for="product_name">Name</label>
+        <input type="text" name="product_name" placeholder="product name"
+               class="form-control"
+               value="{{ request.form['product_name'] or product['product_name'] }}">
+        </input>
+    </div>
+    <div class="form-group">
+        <label for="price">Price</label>
+        <textarea name="price" placeholder="product price"
+                  class="form-control">{{ request.form['price'] or product['price'] }}</textarea>
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea name="description" placeholder="product description"
+                  class="form-control">{{ request.form['description'] or product['description'] }}</textarea>
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+<hr>
+<form action="{{ url_for('delete', id=product['id']) }}" method="post">
+    <input type="submit" value="Delete product"
+            class="btn btn-danger btn-sm"
+            onclick="return confirm('Are you sure you want to delete this product?')">
+</form>
+
+{% endblock %}
