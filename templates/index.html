@@ -6,6 +6,7 @@
 
    
     {% for product in products %}
+
         <a href="{{ url_for('product', id=product['id']) }}">
             <h2>{{ product['product_name'] }}</h2>
         </a>
@@ -13,6 +14,9 @@
         <span class="badge badge-primary">{{ product['price'] }}</span>
         <a href="{{ url_for('review', id=product['id']) }}">
             <span class="badge badge-warning">Reviews</span>
+        </a>
+        <a href="{{ url_for('index', update_cart=product['id']) }}">
+            <span class="badge badge-warning">Buy</span>
         </a>
         <hr>
     {% endfor %}

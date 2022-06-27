@@ -3,5 +3,36 @@
 {% block content %}
 <h1>{% block title %} Shopping Cart {% endblock %}</h1>
 
+<table>
+    <thead>
+        <th>Product Name</th>    
+        <th>Price</th>
+        <th>Action</th>
+    </thead>
+
+
+
+{% for product in cart['products'] %}
+{% for product in products %}
+<tr>
+    <td>{{ product['product_name'] }}</td>
+    <td>{{ product['price'] }}</td>
+    <td><form action="{{ url_for('shopping_cart', remove_id=product['id']) }}" method="post">
+        <input type="submit" value="Remove product"
+                class="btn btn-danger btn-sm"
+                onclick="return confirm('Are you sure you want to remove this product?')">
+    </form></td>
+
+
+</tr>
+{% endfor %}
+{% endfor %}
+    </tbody>
+</table>
+
+
+
+
+<!-- <h1>{% block orders %} Previous Transactions {% endblock %}</h1> -->
 
 {% endblock %}

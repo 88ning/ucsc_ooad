@@ -120,7 +120,17 @@ class Order(object):
 
     def remove_product(self, product_id):
         self.products.remove(product_id)  
- 
+
+    def get_product_list(self):
+        conn = get_db_connection()
+        
+        sql = f'SELECT * FROM products WHERE id IN ({", ".join(["?"]*len(self.products))})'
+        products = conn.execute(sql, self.products).fetchall()
+
+        conn.commit()
+        conn.close()  
+        return products
+
     def commit_order(self):
         conn = get_db_connection()
         for product in self.products:
@@ -137,7 +147,8 @@ class Order(object):
 ##############################################
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '3d6f45a5fc12445dbac2f59c3b6c7cb1'
-current_user = User()
+current_user = User(user_id=1, username='test')
+cart = Order(user_id=current_user.id)
 
 
 
@@ -161,8 +172,12 @@ def index():
 
     else:
         flash('{} {} {}'.format(current_user.id, current_user.username, current_user.password))
-    
-    return render_template('index.html', products=products, user=current_user.username)
+
+    if request.args.get('update_cart'):
+        flash("Shopping cart updated!")
+        cart.add_product(request.args.get('update_cart'))
+        
+    return render_template('index.html', products=products, user=current_user.username, cart=cart)
 
 
 ##############################
@@ -297,8 +312,21 @@ def review(id):
 ######################################
 @app.route('/cart', methods=('GET', 'POST'))
 def shopping_cart():
+   
+    
     # Make sure that only authenticated users can edit products
     if current_user.username == 'Anonymous':
         flash("Sign in to see your shopping cart.")
         return redirect(url_for('signin'))
-    return render_template('shopping-cart.html', user=current_user.username)
+    
+    if request.method == 'POST':
+        remove_id = request.args.get('remove_id')
+        cart.remove_product(remove_id)
+        flash("Shopping cart updated!")
+       
+
+    products = cart.get_product_list()
+    # for product in cart_products:
+    #     flash(product['product_name'])
+
+    return render_template('shopping-cart.html', user=current_user.username, cart=cart, products=products)

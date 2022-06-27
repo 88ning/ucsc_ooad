@@ -9,7 +9,7 @@
     <p><a href="{{ url_for('signin') }}">Sign in</a> to edit this product or add a review.</p>
     
     {% else %}
-    <a href="{{ url_for('edit', id=product['id']) }}">
+    <a href="{{ url_for('edit', id=product['id'], user=user) }}">
         <span class="badge badge-warning">Edit</span>
     </a>
     {% endif %}
