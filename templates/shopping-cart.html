@@ -27,11 +27,16 @@
 </tr>
 {% endfor %}
 {% endfor %}
+
     </tbody>
 </table>
 
 
-
+<form action="{{ url_for('shopping_cart', checkout='true') }}" method="post">
+    <input type="submit" value="Checkout Cart"
+            class="btn btn-checkout btn-lg"
+            onclick="return confirm('Ready to checkout?')">
+</form>
 
 <!-- <h1>{% block orders %} Previous Transactions {% endblock %}</h1> -->
 

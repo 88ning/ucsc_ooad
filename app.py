@@ -23,15 +23,21 @@ def get_db_connection():
 ## CLASS DEFINITIONS
 ##############################################
 class User(object):
-    def __init__(self, user_id=None, username='Anonymous', password=None):
+    def __init__(self, user_id=None, username='Anonymous', password=None, email=None, address=None, payment_details=None):
         self.id = user_id
         self.username = username
         self.password = password
+        self.email = email
+        self.address = address
+        self.payment_details = payment_details
 
     def reset(self):
         self.id = None
         self.username = 'Anonymous'
         self.password = None
+        self.email = None
+        self.address = None
+        self.payment_details = None
 
     def get_reviews(self):
         conn = get_db_connection()
@@ -60,7 +66,7 @@ class Review(object):
 
 
 class Product(object):
-    def __init__(self, product_id=None, name=None, description=None, price=None):
+    def __init__(self, product_id=None, name=None, description=None, price=None, merchant_id=None, distibution_center_id=None):
         
         if product_id != '':
             conn = get_db_connection()
@@ -110,11 +116,15 @@ class Product(object):
 
 
 class Order(object):
-    def __init__(self, transaction_id=None, user_id=None):
-        self.id = transaction_id
+    def __init__(self, user_id=None):
+
         self.user = user_id
+        self.transaction_id = ''
         self.products = []
     
+    def set_transaction_id(self,id):
+        self.transaction_id = id
+
     def add_product(self, product_id):
         self.products.append(product_id)
 
@@ -131,14 +141,25 @@ class Order(object):
         conn.close()  
         return products
 
+    def get_orders(product_id, user_id):
+        pass
+
     def commit_order(self):
+        self.set_transaction_id(f"{self.user}_{datetime}")
         conn = get_db_connection()
-        for product in self.products:
-            conn.execute('INSERT INTO orders (transaction_id, user, product) VALUES (?, ?, ?)',
-                            (self.id, self.user, product))
+        for product_id in self.products:
+            product=Product(product_id)
+            conn.execute('INSERT INTO orders (transaction_id, user_id, product_id, product_name, price) VALUES (?, ?, ?, ?, ?)',
+                            (self.transaction_id, self.user, product.id, product.name, product.price))
             
         conn.commit()
         conn.close()
+
+        #reset cart object
+        self.transaction_id = ''
+        self.products = []
+       
+
 
     
 
@@ -319,14 +340,19 @@ def shopping_cart():
         flash("Sign in to see your shopping cart.")
         return redirect(url_for('signin'))
     
-    if request.method == 'POST':
-        remove_id = request.args.get('remove_id')
-        cart.remove_product(remove_id)
-        flash("Shopping cart updated!")
+    if request.method == 'POST' and request.args.get('checkout') == 'true':
+        cart.commit_order()   
+
+    elif request.method == 'POST' and request.args.get('remove_id') !='':
        
+        remove_id = request.args.get('remove_id')
+        product=Product(remove_id)
+        
+        cart.remove_product(remove_id)
+        flash(f"{product.name} has been removed from your shopping cart.")
+
+    
 
     products = cart.get_product_list()
-    # for product in cart_products:
-    #     flash(product['product_name'])
 
     return render_template('shopping-cart.html', user=current_user.username, cart=cart, products=products)

@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS orders;
 
 CREATE TABLE products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,4 +25,14 @@ CREATE TABLE reviews (
     rating TEXT NOT NULL,
     feedback TEXT NOT NULL,
     date TEXT NOT NULL
+);
+
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    transaction_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    price TEXT NOT NULL
 );
