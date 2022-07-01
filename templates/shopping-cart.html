@@ -3,6 +3,9 @@
 {% block content %}
 <h1>{% block title %} Shopping Cart {% endblock %}</h1>
 
+{% if cart['products'] == '' %}
+<p>Your shopping cart is empty!</p>
+{% else %}
 <table>
     <thead>
         <th>Product Name</th>    
@@ -31,8 +34,8 @@
     </tbody>
 </table>
 
-
-<form action="{{ url_for('shopping_cart', checkout='true') }}" method="post">
+{% endif %}
+<form action="{{ url_for('shopping_cart', status='checkout') }}" method="post">
     <input type="submit" value="Checkout Cart"
             class="btn btn-checkout btn-lg"
             onclick="return confirm('Ready to checkout?')">

@@ -3,6 +3,7 @@ import sqlite3
 from flask import Flask, render_template, request, url_for, flash, redirect, session
 from werkzeug.exceptions import abort
 from datetime import datetime
+import time
 
 def get_db_connection():
     conn = sqlite3.connect('database.db')
@@ -10,14 +11,7 @@ def get_db_connection():
     return conn
 
 
-# def get_product(product_id):
-#     conn = get_db_connection()
-#     product = conn.execute('SELECT * FROM products WHERE id = ?',
-#                         (product_id,)).fetchone()
-#     conn.close()
-#     if product is None:
-#         abort(404)
-#     return product
+
     
 ##############################################
 ## CLASS DEFINITIONS
@@ -87,7 +81,7 @@ class Review(object):
 class Product(object):
     def __init__(self, product_id=None, name=None, description=None, price=None, merchant_id=None, distibution_center_id=None):
         
-        if product_id != '':
+        if product_id != None:
             conn = get_db_connection()
             product = conn.execute('SELECT * FROM products WHERE id = ?',
                                 (product_id,)).fetchone()
@@ -145,9 +139,13 @@ class Order(object):
         self.user = user_id
         self.transaction_id = ''
         self.products = []
+        self.status = 'Open'
     
     def set_transaction_id(self,id):
         self.transaction_id = id
+
+    def set_status(self,status):
+        self.status = status
 
     def add_product(self, product_id):
         self.products.append(product_id)
@@ -176,6 +174,8 @@ class Order(object):
             conn.execute('INSERT INTO orders (transaction_id, user_id, product_id, product_name, price) VALUES (?, ?, ?, ?, ?)',
                             (self.transaction_id, self.user, product.id, product.name, product.price))
             
+            # todo: remove product from inventory
+            
         conn.commit()
         conn.close()
 
@@ -183,9 +183,30 @@ class Order(object):
         self.transaction_id = ''
         self.products = []
        
+class Delivery():
+    def __init__(self, order_id):
+        self.runner = 10
+        self.distribution_center = 'AZ'
+        self.current_order = Order(order_id)
 
 
-    
+    def set_delivery_in_progress(self, status):
+        self.current_order.set_status = 'Out for Delivery'
+
+    def set_delivery_complete(self, status):
+        self.current_order.set_status = 'Deliverered'
+
+    def dispatch_runner(self):
+        flash('We are delivering your order')
+        self.set_delivery_in_progress()
+
+        # the runners can deliver really really fast
+        time.sleep(60)
+
+
+        flash('Order complete!')
+        self.set_delivery_complete()
+
 
 ##############################################
 ## Initializations an functions
@@ -205,8 +226,8 @@ cart = Order(user_id=current_user.id)
 
 @app.route('/')
 def index():
-    products = Product().get_all_products
-
+    products = Product().get_all_products()
+     
     
     if request.args.get('signout'):
         flash('You have been signed out!')
@@ -250,7 +271,7 @@ def signin():
                 current_user.password = user_record['password']
                 current_user.add()
                 flash('"{}" has been added'.format(current_user.username))
-                
+
             if user_record['password'] != password:
                 flash('Password is incorrect!')
             else:
@@ -364,8 +385,9 @@ def shopping_cart():
         flash("Sign in to see your shopping cart.")
         return redirect(url_for('signin'))
     
-    if request.method == 'POST' and request.args.get('checkout') == 'true':
+    if request.method == 'POST' and request.args.get('status') == 'checkout':
         cart.commit_order()   
+        flash('Order complete! We will begin delivery soon.')
 
     elif request.method == 'POST' and request.args.get('remove_id') !='':
        
