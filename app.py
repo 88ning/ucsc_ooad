@@ -23,13 +23,13 @@ def get_db_connection():
 ## CLASS DEFINITIONS
 ##############################################
 class User(object):
-    def __init__(self, user_id=None, username='Anonymous', password=None, email=None, address=None, payment_details=None):
+    def __init__(self, user_id=None, username='Anonymous', password=None, email=None, address=None, bank_details=None):
         self.id = user_id
         self.username = username
         self.password = password
         self.email = email
         self.address = address
-        self.payment_details = payment_details
+        self.bank_details = bank_details
 
     def reset(self):
         self.id = None
@@ -37,13 +37,32 @@ class User(object):
         self.password = None
         self.email = None
         self.address = None
-        self.payment_details = None
+        self.bank_details = None
+
+    def find_user_by_username(self):
+        conn = get_db_connection()
+        user_record = conn.execute('SELECT * FROM users WHERE username=?', (self.username,)).fetchone()        
+        conn.close()
+        return user_record
 
     def get_reviews(self):
         conn = get_db_connection()
         reviews = conn.execute('SELECT * FROM reviews WHERE user_id = ? ORDER BY date', (self.id,)).fetchall()
         conn.close()
         return reviews
+    
+    def add(self):
+        conn = get_db_connection()
+        conn.execute('INSERT INTO users (username, password, email, address, bank_details) VALUES (?, ?, ?, ?, ?)',
+                            ( self.username, self.password, self.email, self.address, self.bank_details))
+        conn.commit()
+        conn.close()
+
+        # conn.execute('INSERT INTO users (username, password) VALUES (?, ?)',
+        #                     (username, password))
+        #         conn.commit()
+        #         user_records = conn.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
+        #         conn.close()
 
 
 class Review(object):
@@ -86,8 +105,13 @@ class Product(object):
             self.price = price
 
         
+    def get_all_products(self):
+        conn = get_db_connection()
+        products = conn.execute('SELECT * FROM products').fetchall()
+        conn.close()
+        return products
 
-    def update_db(self):
+    def update(self):
             conn = get_db_connection()
             if conn.execute('SELECT * FROM products WHERE id = ?', (self.id,)).fetchone() == None:
                 conn.execute('INSERT INTO products (product_name, description, price) VALUES (?, ?, ?)',
@@ -181,9 +205,8 @@ cart = Order(user_id=current_user.id)
 
 @app.route('/')
 def index():
-    conn = get_db_connection()
-    products = conn.execute('SELECT * FROM products').fetchall()
-    conn.close()
+    products = Product().get_all_products
+
     
     if request.args.get('signout'):
         flash('You have been signed out!')
@@ -219,22 +242,23 @@ def signin():
             conn = get_db_connection()
 
            
-            user_records = conn.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
-            if  user_records == None:
-                conn.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-                            (username, password))
-                conn.commit()
-                user_records = conn.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
-                conn.close()
-                flash('"{}" has been added'.format(username))
-            if user_records['password'] != password:
+            user_record = User(username=username).find_user_by_username()
+            if  user_record == None:
+                current_user.reset()
+                current_user.id = user_record['id']
+                current_user.username = user_record['username']
+                current_user.password = user_record['password']
+                current_user.add()
+                flash('"{}" has been added'.format(current_user.username))
+                
+            if user_record['password'] != password:
                 flash('Password is incorrect!')
             else:
                 
                 # current_user = User(user_records['id'], user_records['username'], user_records['password'])
-                current_user.id = user_records['id']
-                current_user.username = user_records['username']
-                current_user.password = user_records['password']
+                current_user.id = user_record['id']
+                current_user.username = user_record['username']
+                current_user.password = user_record['password']
 
                 return redirect(url_for('index'))
             
@@ -263,7 +287,7 @@ def create():
             flash('Title is required!')
         else:
             new_product = Product(name=product_name, description=description,price=price)
-            new_product.update_db()
+            new_product.update()
             return redirect(url_for('index'))
     if current_user.username == 'Anonymous':
         flash("Sign in to sell a product on Wallymart.")
@@ -286,7 +310,7 @@ def edit(id):
             flash('Title is required!')
         else:
             existing_product = Product(product_id=id,name=product_name, description=description, price=price)
-            existing_product.update_db()
+            existing_product.update()
             return redirect(url_for('index'))
 
     # Make sure that only authenticated users can edit products
