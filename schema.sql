@@ -39,5 +39,7 @@ CREATE TABLE orders (
     user_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
     product_name TEXT NOT NULL,
-    price TEXT NOT NULL
+    price TEXT NOT NULL,
+    deliveries TEXT NOT NULL,
+    status TEXT NOT NULL
 );

@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>{% block title %} Shopping Cart {% endblock %}</h1>
+<h1>{% block shop_title %} Shopping Cart {% endblock %}</h1>
 
-{% if cart['products'] == '' %}
-<p>Your shopping cart is empty!</p>
+{% if cart['products']|length == 0 %}
+<p>Your shopping cart is empty! Return to the main page to select products.</p>
 {% else %}
 <table>
     <thead>
@@ -33,14 +33,37 @@
 
     </tbody>
 </table>
-
-{% endif %}
 <form action="{{ url_for('shopping_cart', status='checkout') }}" method="post">
     <input type="submit" value="Checkout Cart"
             class="btn btn-checkout btn-lg"
             onclick="return confirm('Ready to checkout?')">
 </form>
 
-<!-- <h1>{% block orders %} Previous Transactions {% endblock %}</h1> -->
+{% endif %}
+
+<h1>{% block order_title %} Orders {% endblock %}</h1>
+
+{% if orders|length == 0 %}
+<p>You have no previous orders.</p>
+{% else %}
+<table>
+    <thead>
+        <th>Order Number</th>    
+        <th>Number of deliveries in this transaction</th>
+        <th>Status</th>
+    </thead>
+
+    {% for order in orders %}
+<tr>
+    <td>{{ order['id'] }}</td>
+    <td>{{ order['deliveries'] }}</td>
+    <td>{{ order['status'] }}</td>
+
+
+</tr>
+{% endfor %}
+   
+    </table>
+{% endif %}
 
 {% endblock %}

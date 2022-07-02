@@ -144,10 +144,9 @@ class Product(object):
 
 
 class Order(object):
-    def __init__(self, user_id=None):
-
+    def __init__(self, user_id=None, transaction_id=None):
         self.user = user_id
-        self.transaction_id = ''
+        self.transaction_id = transaction_id
         self.products = []
         self.status = 'Open'
     
@@ -173,45 +172,87 @@ class Order(object):
         conn.close()  
         return products
 
-    def get_orders(product_id, user_id):
-        pass
+    def get_orders(self, user_id):
+        conn = get_db_connection()
+        orders = conn.execute('SELECT * FROM orders WHERE user_id = ? ORDER BY transaction_id', (user_id,)).fetchall()
+        conn.close()
+        return orders
+
+    def get_transaction(self):
+        conn = get_db_connection()
+        orders = conn.execute('SELECT * FROM orders WHERE transaction_id = ? ORDER BY transaction_id', (self.transaction_id,)).fetchall()
+        conn.close()
+        return orders
+
+    def set_status(self, status):
+        conn = get_db_connection()
+        conn.execute('UPDATE orders SET status = ?'
+                         ' WHERE transaction_id = ?',
+                       (status, self.transaction_id))    
+
+            
+        conn.commit()
+        conn.close()
+
+    def set_deliveries(self, deliveries):
+        conn = get_db_connection()
+        conn.execute('UPDATE orders SET deliveries = ?'
+                         ' WHERE transaction_id = ?',
+                       (deliveries, self.transaction_id))    
+
+            
+        conn.commit()
+        conn.close()
 
     def commit_order(self):
-        self.set_transaction_id(f"{self.user}_{datetime}")
+        self.set_transaction_id(f"{self.user}_{datetime.now().strftime('%m/%d/%Y %H:%M:%S')}")
         conn = get_db_connection()
+  
         for product_id in self.products:
             product=Product(product_id)
-            conn.execute('INSERT INTO orders (transaction_id, user_id, product_id, product_name, price) VALUES (?, ?, ?, ?, ?)',
-                            (self.transaction_id, self.user, product.id, product.name, product.price))
+            conn.execute('INSERT INTO orders (transaction_id, user_id, product_id, product_name, price, deliveries, status) VALUES (?, ?, ?, ?, ?,?,?)',
+                            (self.transaction_id, self.user, product.id, product.name, product.price, 'TBD', 'Ordered'))
             
             # todo: remove product from inventory
             
         conn.commit()
         conn.close()
 
+        delivery = Delivery(self.transaction_id)
+        delivery.dispatch_runners()
+
         #reset cart object
         self.transaction_id = ''
         self.products = []
        
 class Delivery():
-    def __init__(self, order_id):
-        self.runner = 10
+    def __init__(self, transaction_id):
+        self.runners = 1
         self.distribution_center = 'AZ'
-        self.current_order = Order(order_id)
+        self.current_order = Order(transaction_id=transaction_id)
 
 
-    def set_delivery_in_progress(self, status):
-        self.current_order.set_status = 'Out for Delivery'
+    def set_runners(self):
+        self.runners = len(self.current_order.get_transaction())
+        self.current_order.set_deliveries(self.runners)
 
-    def set_delivery_complete(self, status):
-        self.current_order.set_status = 'Deliverered'
+    def set_delivery_in_progress(self):
+        flash('Order is out for delivery!')
+        self.current_order.set_status(status='Out for Delivery')
 
-    def dispatch_runner(self):
+
+    def set_delivery_complete(self):
+        flash('Order is delivered!')
+        self.current_order.set_status(status='Deliverered')
+
+    def dispatch_runners(self):
+        self.set_runners()
         flash('We are delivering your order')
+        time.sleep(3)
         self.set_delivery_in_progress()
 
         # the runners can deliver really really fast
-        time.sleep(60)
+        time.sleep(3)
 
 
         flash('Order complete!')
@@ -437,8 +478,15 @@ def shopping_cart():
         cart.remove_product(remove_id)
         flash(f"{product.name} has been removed from your shopping cart.")
 
+    if request.method == 'GET':
+        products = cart.get_product_list()
+
+        user_orders = Order().get_orders(current_user.id)
+        return render_template('shopping-cart.html', user=current_user.username, cart=cart, products=products, orders=user_orders)
+
     
 
     products = cart.get_product_list()
 
-    return render_template('shopping-cart.html', user=current_user.username, cart=cart, products=products)
+    user_orders = Order().get_orders(current_user.id)
+    return render_template('shopping-cart.html', user=current_user.username, cart=cart, products=products, orders=user_orders)
