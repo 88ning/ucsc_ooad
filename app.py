@@ -224,6 +224,9 @@ class Order(object):
         #reset cart object
         self.transaction_id = ''
         self.products = []
+    
+    def pay_merchant():
+        pass
        
 class Delivery():
     def __init__(self, transaction_id):
