@@ -15,10 +15,11 @@ CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     username TEXT NOT NULL,
-    password TEXT NOT NULL
-    address TEXT NOT NULL,
-    email TEXT NOT NULL,
+    password TEXT NOT NULL,
     user_type TEXT NOT NULL,
+    address TEXT NOT NULL,
+    state TEXT NOT NULL,
+    zip TEXT NOT NULL,
     bank_details TEXT NOT NULL
 );
 

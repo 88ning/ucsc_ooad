@@ -17,23 +17,11 @@ cur.execute("INSERT INTO products (product_name, description, price) VALUES (?, 
             )
 
 
-cur.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-             ('test1', 'test')
+cur.execute('INSERT INTO users (username, password, user_type, bank_details, address, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?)',
+             ('test-user', 'test', 'user', '222299999', '1 state lane', 'AZ', '11111')
             )
-cur.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-             ('test2', 'test')
-            )
-
-cur.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-             ('test3', 'test')
-            )
-
-cur.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-             ('test4', 'test')
-            )
-
-cur.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-             ('test5', 'test')
+cur.execute('INSERT INTO users (username, password, user_type, bank_details, address, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?)',
+             ('test-merchant', 'test', 'merchant',  '3333333', '1 state lane', 'AZ', '11111')
             )
 
 

@@ -17,20 +17,35 @@ def get_db_connection():
 ## CLASS DEFINITIONS
 ##############################################
 class User(object):
-    def __init__(self, user_id=None, username='Anonymous', password=None, email=None, address=None, bank_details=None):
+    def __init__(self, user_id=None, username='Anonymous', password=None, user_type=None, address=None, state=None, zip=None, bank_details=None):
         self.id = user_id
         self.username = username
         self.password = password
-        self.email = email
+        self.user_type = user_type
         self.address = address
+        self.state =state
+        self.zip = zip
         self.bank_details = bank_details
+
+    def set(self, user_id=None, username='Anonymous', password=None, user_type=None, address=None, state=None, zip=None, bank_details=None):
+        self.id = user_id
+        self.username = username
+        self.password = password
+        self.user_type = user_type
+        self.address = address
+        self.state =state
+        self.zip = zip
+        self.bank_details = bank_details
+
 
     def reset(self):
         self.id = None
         self.username = 'Anonymous'
         self.password = None
-        self.email = None
+        self.user_type = None
         self.address = None
+        self.state = None
+        self.zip = None
         self.bank_details = None
 
     def find_user_by_username(self):
@@ -47,18 +62,13 @@ class User(object):
     
     def add(self):
         conn = get_db_connection()
-        conn.execute('INSERT INTO users (username, password, email, address, bank_details) VALUES (?, ?, ?, ?, ?)',
-                            ( self.username, self.password, self.email, self.address, self.bank_details))
+        conn.execute('INSERT INTO users (username, password, user_type, address, state, zip, bank_details) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                            ( self.username, self.password, self.user_type, self.address, self.state, self.zip, self.bank_details))
         conn.commit()
+        user_record = conn.execute('SELECT * FROM users WHERE username = ?', (self.username,)).fetchone()
+        self.id = user_record['id']
         conn.close()
-
-        # conn.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-        #                     (username, password))
-        #         conn.commit()
-        #         user_records = conn.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
-        #         conn.close()
-
-
+        
 class Review(object):
     def __init__(self, review_id=None, product_id=None, user=None, rating=None, feedback=None):
         self.id = review_id
@@ -266,11 +276,8 @@ def signin():
             user_record = User(username=username).find_user_by_username()
             if  user_record == None:
                 current_user.reset()
-                current_user.id = user_record['id']
-                current_user.username = user_record['username']
-                current_user.password = user_record['password']
-                current_user.add()
-                flash('"{}" has been added'.format(current_user.username))
+                flash('User does not exist. Please sign up for an account.')
+                return redirect(url_for('signup'), username=username, password=password)               
 
             if user_record['password'] != password:
                 flash('Password is incorrect!')
@@ -284,6 +291,39 @@ def signin():
                 return redirect(url_for('index'))
             
     return render_template('sign-in.html', product=product)
+
+@app.route('/sign-up', methods=('GET', 'POST'))
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user_type = request.form['user_type']
+        bank = request.form['bank']
+        street = request.form['street']
+        state = request.form['state']
+        zip = request.form['zip']
+
+        if not username:
+            flash('Username is required!')
+        if not password:
+            flash('Password is required!')
+        if not user_type:
+            flash('User type is required!')
+        if not bank:
+            flash('Bank details are required!')
+        if not street:
+            flash('Street address is required!')
+        if not state:
+            flash('State is required!')
+        if not zip:
+            flash('ZIP code is required!')
+
+        current_user.set(user_id=None, username=username, password=password, user_type=user_type, address=street, state=state, zip=zip, bank_details=bank)
+        current_user.add()
+        flash('You have signed up successfully!')
+        return redirect(url_for('index'))
+        
+    return render_template('sign-up.html', product=product, user=current_user.username)
 
 ######################################
 ########## Product Routing  ##########
