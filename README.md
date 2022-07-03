@@ -7,7 +7,7 @@ This project is for the UC Santa Cruz Extension Object Oriented Analysis and Des
 
 1. Install Python on your computer.
 2. Run `pip install requirements.txt`
-3. .Change directory to this project.
+3. Change directory to this project.
 4. In Terminal, type `python project_x.py`
 
 A message like this should appear:
