@@ -1,3 +1,9 @@
 
 .DS_Store
 *.pyc
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/ucsc_ooad.iml
+.idea/vcs.xml
+.idea/workspace.xml

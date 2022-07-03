@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, url_for, flash, redirect, ses
 from werkzeug.exceptions import abort
 from datetime import datetime
 import time
+import os
 
 def get_db_connection():
     conn = sqlite3.connect('database.db')
@@ -493,3 +494,7 @@ def shopping_cart():
 
     user_orders = Order().get_orders(current_user.id)
     return render_template('shopping-cart.html', user=current_user.username, cart=cart, products=products, orders=user_orders)
+
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
